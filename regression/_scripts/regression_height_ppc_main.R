@@ -24,16 +24,45 @@ d <- d[ d$age >= 18 , ]
 # =============================================================================
 #### Running Stan & prior predictive checks #### 
 # =============================================================================
+epsilon_alpha <- c(170, 100) # parameters for prior distribution for alpha
+epsilon_beta  <- c(0,20) # parameters for prior distribution for beta
+epsilon_sigma <- c(0,20) # parameters for prior distribution for sigma
 
+rstan_options(auto_write = TRUE)
+options(mc.cores = 4)
 
+N <- 1e4 # define sampling size for PPC
+dataList <- list(N=N, epsilon_alpha=epsilon_alpha, epsilon_beta=epsilon_beta, epsilon_sigma=epsilon_sigma)
 
+modelFile <- '_scripts/regression_height_pri.stan'
+nIter     <- 2000
+nChains   <- 1 
+nWarmup   <- floor(nIter/2)
+nThin     <- 1
 
+cat("Estimating", modelFile, "model... \n")
+startTime = Sys.time(); print(startTime)
+cat("Calling", nChains, "simulations in Stan... \n")
+
+fit_reg_pripc <- stan(modelFile, 
+                    data    = dataList, 
+                    chains  = nChains,
+                    iter    = nIter,
+                    warmup  = nWarmup,
+                    thin    = nThin,
+                    init    = "random",
+                    seed    = 1450154627, 
+                    algorithm="Fixed_param")
+
+cat("Finishing", modelFile, "model simulation ... \n")
+endTime = Sys.time(); print(endTime)  
+cat("It took",as.character.Date(endTime - startTime), "\n")
 
 # =============================================================================
 #### Running Stan & posterior predictive checks #### 
 # =============================================================================
 rstan_options(auto_write = TRUE)
-options(mc.cores = 2)
+options(mc.cores = 4)
 
 N <- length(d$height)
 dataList <- list(N=N, height=d$height, weight=d$weight)
